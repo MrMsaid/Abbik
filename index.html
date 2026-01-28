@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Abbik — Glass Links</title>
+
+  <!-- Google Font (Cyrillic) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg0:#020205;
+      --bg1:#070712;
+
+      --r1:#ff2a2a;
+      --r2:#ff0048;
+      --r3:#ff6b00;
+
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.65);
+      --shadow: rgba(0,0,0,.58);
+
+      /* parallax vars (JS updates) */
+      --rx: 0deg;
+      --ry: 0deg;
+      --hx: 50%;
+      --hy: 15%;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      overflow:hidden;
+      font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(900px 520px at 50% 45%, rgba(255,0,72,.18), transparent 60%),
+        radial-gradient(740px 520px at 50% 72%, rgba(255,42,42,.14), transparent 65%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+    }
+
+    /* particle canvas */
+    #particles{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    /* drifting glow fog layer */
+    .fog{
+      position:fixed;
+      inset:-35%;
+      pointer-events:none;
+      z-index:1;
+      background:
+        radial-gradient(closest-side at 30% 40%, rgba(255,0,72,.10), transparent 70%),
+        radial-gradient(closest-side at 70% 55%, rgba(255,42,42,.09), transparent 72%),
+        radial-gradient(closest-side at 55% 75%, rgba(255,107,0,.06), transparent 78%);
+      filter: blur(26px);
+      opacity:.9;
+      animation:fogDrift 18s ease-in-out infinite alternate;
+    }
+    @keyframes fogDrift{
+      0%{ transform: translate(-2%, -1%) scale(1.02); }
+      100%{ transform: translate(2%, 1%) scale(1.07); }
+    }
+
+    /* layout */
+    .stage{
+      position:relative;
+      z-index:2;
+      height:100%;
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+
+    .card-wrap{
+      perspective: 1100px;
+      width:min(420px, 92vw);
+      height:min(720px, 88vh);
+    }
+
+    .card{
+      width:100%;
+      height:100%;
+      border-radius:34px;
+      position:relative;
+      padding:36px 26px 28px;
+      isolation:isolate;
+
+      transform: rotateX(var(--rx)) rotateY(var(--ry));
+      transform-style: preserve-3d;
+      transition: transform .18s ease;
+    }
+
+    /* animated red border glow */
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-4px;
+      border-radius:38px;
+      background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(255,0,72,.0) 40deg,
+        rgba(255,0,72,.85) 90deg,
+        rgba(255,42,42,.70) 140deg,
+        rgba(255,107,0,.30) 190deg,
+        rgba(255,0,72,.75) 260deg,
+        transparent 330deg,
+        transparent 360deg
+      );
+      filter: blur(15px);
+      opacity:.95;
+      animation: spin 14s linear infinite, breathe 4.6s ease-in-out infinite;
+      z-index:-2;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes breathe{
+      0%,100%{ opacity:.78; filter: blur(15px); }
+      50%{ opacity:.98; filter: blur(17px); }
+    }
+
+    /* glass body */
+    .card::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:34px;
+      background: linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.028));
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow:
+        0 30px 90px var(--shadow),
+        inset 0 1px 0 rgba(255,255,255,.18);
+      backdrop-filter: blur(18px) saturate(145%);
+      -webkit-backdrop-filter: blur(18px) saturate(145%);
+      z-index:-1;
+    }
+
+    /* inner shine (slow) */
+    .shine{
+      position:absolute;
+      inset:10px;
+      border-radius:28px;
+      pointer-events:none;
+      background:
+        radial-gradient(700px 220px at 35% 10%, rgba(255,255,255,.16), transparent 60%),
+        radial-gradient(520px 220px at 70% 30%, rgba(255,0,72,.10), transparent 65%);
+      mix-blend-mode: screen;
+      opacity:.9;
+      filter: blur(2px);
+      animation: shineDrift 14s ease-in-out infinite alternate;
+      transform: translateZ(18px);
+    }
+    @keyframes shineDrift{
+      0%{ transform: translate3d(-12px,-14px,18px); opacity:.72; }
+      100%{ transform: translate3d(14px,12px,18px); opacity:1; }
+    }
+
+    /* specular highlight follows pointer */
+    .spec{
+      position:absolute;
+      inset:12px;
+      border-radius:26px;
+      pointer-events:none;
+      background:
+        radial-gradient(520px 240px at var(--hx) var(--hy), rgba(255,255,255,.20), transparent 55%),
+        radial-gradient(380px 240px at calc(var(--hx) + 10%) calc(var(--hy) + 18%), rgba(255,0,72,.10), transparent 60%);
+      opacity:.9;
+      mix-blend-mode: screen;
+      filter: blur(1px);
+      transform: translateZ(22px);
+    }
+
+    h1{
+      margin:0;
+      text-align:center;
+      font-weight:800;
+      letter-spacing:.2px;
+      font-size:48px;
+      text-shadow: 0 10px 30px rgba(255,0,72,.18);
+      transform: translateZ(26px);
+    }
+
+    .buttons{
+      margin-top:28px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      padding:0 6px;
+      transform: translateZ(22px);
+    }
+
+    .btn{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:16px 18px;
+      border-radius:18px;
+      text-decoration:none;
+      color:var(--text);
+      background: linear-gradient(180deg, rgba(255,255,255,.11), rgba(255,255,255,.045));
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow:
+        0 14px 40px rgba(255,0,72,.10),
+        inset 0 1px 0 rgba(255,255,255,.14);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      position:relative;
+      overflow:hidden;
+      transition: transform .15s ease, border-color .15s ease, filter .15s ease;
+    }
+
+    /* slower sweep highlight */
+    .btn::before{
+      content:"";
+      position:absolute;
+      inset:-60% -30%;
+      background:
+        radial-gradient(circle at 30% 50%, rgba(255,0,72,.33), transparent 56%),
+        radial-gradient(circle at 70% 55%, rgba(255,42,42,.22), transparent 62%);
+      filter: blur(11px);
+      opacity:.70;
+      transform: translateX(-20%) rotate(10deg);
+      animation: sweep 7.4s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes sweep{
+      0%{ transform: translateX(-38%) rotate(12deg); opacity:.40; }
+      50%{ transform: translateX(26%) rotate(12deg); opacity:.92; }
+      100%{ transform: translateX(-38%) rotate(12deg); opacity:.40; }
+    }
+
+    .btn:hover{
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,.22);
+      filter: brightness(1.06);
+    }
+    .btn:active{ transform: translateY(0px) scale(.99); }
+
+    .icon{
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      display:grid;
+      place-items:center;
+      font-size:22px;
+      background: rgba(255,0,72,.14);
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow: 0 10px 26px rgba(255,0,72,.10);
+      flex:0 0 auto;
+    }
+
+    .label{ line-height:1.1; }
+    .title{
+      font-size:18px;
+      font-weight:700;
+      color:rgba(255,255,255,.92);
+    }
+    .handle{
+      font-size:15px;
+      font-weight:600;
+      color:rgba(255,255,255,.62);
+      margin-top:6px;
+    }
+
+    /* accessibility: reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .card{ transform:none !important; }
+      .card::before, .fog, .shine, .btn::before { animation: none !important; }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="particles"></canvas>
+  <div class="fog"></div>
+
+  <main class="stage">
+    <div class="card-wrap">
+      <section class="card" id="card" aria-label="Abbik links">
+        <div class="shine"></div>
+        <div class="spec"></div>
+
+        <h1>Abbik</h1>
+
+        <nav class="buttons" aria-label="Telegram links">
+          <!-- REQUIRED ORDER: Главный Telegram, Личка, Исходники -->
+          <a class="btn" href="https://t.me/Abbiikk" target="_blank" rel="noopener noreferrer">
+            <span class="icon">🔥</span>
+            <span class="label">
+              <div class="title">Главный Telegram</div>
+              <div class="handle">@Abbiikk</div>
+            </span>
+          </a>
+
+          <a class="btn" href="https://t.me/iamabbik" target="_blank" rel="noopener noreferrer">
+            <span class="icon">💬</span>
+            <span class="label">
+              <div class="title">Личка</div>
+              <div class="handle">@iamabbik</div>
+            </span>
+          </a>
+
+          <a class="btn" href="https://t.me/Isxoddniki" target="_blank" rel="noopener noreferrer">
+            <span class="icon">🚗</span>
+            <span class="label">
+              <div class="title">Исходники</div>
+              <div class="handle">@Isxoddniki</div>
+            </span>
+          </a>
+        </nav>
+      </section>
+    </div>
+  </main>
+
+  <script>
+  (() => {
+    // Particles (slower + more "bokeh" variety)
+    const canvas = document.getElementById("particles");
+    const ctx = canvas.getContext("2d", { alpha: true });
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let w=0, h=0;
+    let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
+    function resize(){
+      w = Math.floor(window.innerWidth);
+      h = Math.floor(window.innerHeight);
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener("resize", resize, { passive:true });
+    resize();
+
+    const rnd = (a,b)=> a + Math.random()*(b-a);
+    const N = Math.floor(Math.min(260, Math.max(140, (w*h)/8500)));
+    const parts = [];
+
+    function reset(p, spawnBottom=false){
+      p.x = rnd(-60, w+60);
+      p.y = spawnBottom ? rnd(h, h+140) : rnd(-140, h+140);
+      const big = Math.random() < 0.18;               // a few larger bokeh
+      p.r = big ? rnd(2.2, 5.8) : rnd(0.7, 2.4);
+      p.vy = big ? rnd(0.05, 0.18) : rnd(0.08, 0.32); // slower upward drift
+      p.vx = big ? rnd(-0.12, 0.12) : rnd(-0.20, 0.20);
+      p.a  = big ? rnd(0.05, 0.18) : rnd(0.10, 0.50);
+      p.tw = rnd(0.0012, 0.0032);   // twinkle speed (slow)
+      p.ph = rnd(0, Math.PI*2);
+      p.blur = big ? 10 : 3;
+      p.kind = Math.random();       // color blend
+    }
+
+    for(let i=0;i<N;i++){
+      const p={};
+      reset(p);
+      parts.push(p);
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,w,h);
+
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+
+      // subtle red wash
+      const g = ctx.createRadialGradient(w*0.5, h*0.56, 0, w*0.5, h*0.56, Math.max(w,h)*0.75);
+      g.addColorStop(0, "rgba(255,0,72,0.055)");
+      g.addColorStop(0.55, "rgba(255,42,42,0.030)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,w,h);
+
+      for(const p of parts){
+        const tw = 0.68 + 0.32 * Math.sin(p.ph);
+        const alpha = Math.max(0, Math.min(1, p.a * tw));
+
+        const col =
+          p.kind < 0.55 ? `rgba(255,0,72,${alpha})` :
+          p.kind < 0.88 ? `rgba(255,42,42,${alpha})` :
+          `rgba(255,107,0,${alpha*0.7})`;
+
+        ctx.beginPath();
+        ctx.fillStyle = col;
+        // fake blur: draw a soft halo + core
+        ctx.arc(p.x, p.y, p.r + (p.blur*0.06), 0, Math.PI*2);
+        ctx.fill();
+
+        if(!reduced){
+          p.y -= p.vy;
+          p.x += p.vx;
+          p.ph += (p.tw*60);
+
+          // gentle horizontal sway
+          p.x += Math.sin(p.ph * 0.6) * 0.05;
+
+          if(p.y < -180 || p.x < -240 || p.x > w+240){
+            reset(p, true);
+          }
+        }
+      }
+
+      ctx.restore();
+    }
+
+    if(reduced){ draw(); return; }
+
+    (function loop(){
+      draw();
+      requestAnimationFrame(loop);
+    })();
+  })();
+
+  (() => {
+    // Card parallax (more interesting, still subtle)
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) return;
+
+    const card = document.getElementById("card");
+    let raf = null;
+
+    function onMove(e){
+      const rect = card.getBoundingClientRect();
+      const cx = rect.left + rect.width/2;
+      const cy = rect.top + rect.height/2;
+
+      const dx = (e.clientX - cx) / (rect.width/2);
+      const dy = (e.clientY - cy) / (rect.height/2);
+
+      const clamp = (v,min,max)=> Math.max(min, Math.min(max, v));
+      const x = clamp(dx, -1, 1);
+      const y = clamp(dy, -1, 1);
+
+      const rx = (-y * 5.2).toFixed(3) + "deg";
+      const ry = ( x * 6.2).toFixed(3) + "deg";
+
+      // highlight point
+      const hx = (50 + x*18).toFixed(2) + "%";
+      const hy = (15 + y*14).toFixed(2) + "%";
+
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        card.style.setProperty("--rx", rx);
+        card.style.setProperty("--ry", ry);
+        card.style.setProperty("--hx", hx);
+        card.style.setProperty("--hy", hy);
+      });
+    }
+
+    function onLeave(){
+      card.style.setProperty("--rx","0deg");
+      card.style.setProperty("--ry","0deg");
+      card.style.setProperty("--hx","50%");
+      card.style.setProperty("--hy","15%");
+    }
+
+    window.addEventListener("mousemove", onMove, { passive:true });
+    window.addEventListener("mouseleave", onLeave, { passive:true });
+  })();
+  </script>
+</body>
+</html>
